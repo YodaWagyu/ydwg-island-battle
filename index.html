@@ -821,9 +821,9 @@
         window.selectTool = (tool) => {
             state.currentTool = tool;
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('ring-2', 'ring-white'));
-            document.getElementById(`btn-${tool}`).classList.add('ring-2', 'ring-white');
-             TILES)`;
-            }
+            const btn = document.getElementById('btn-' + tool);
+            if(btn) btn.classList.add('ring-2', 'ring-white');
+            renderSetupGrid();
         };
 
         window.toggleOrientation = () => {
@@ -845,26 +845,109 @@
             alert("Randomizer temporarily disabled. Please place manually.");
         };
 
-        function renderSetupGrid() {
-            const gridEl = document.getElementById('setupGrid');
+        
+        function getShipName(size) {
+            if (size === 4) return "BATTLESHIP";
+            if (size === 3) return "CRUISER";
+            if (size === 2) return "DESTROYER";
+            if (size === 1) return "SUBMARINE";
+            return "SHIP";
+        }
+
+        function handleSetupHover(r, c, isEnter) {
+            const gridEl = document.getElementById("setupGrid");
             if (!gridEl) return;
-            gridEl.innerHTML = '';
+            
+            // Clear previous previews
+            if (isEnter) {
+                document.querySelectorAll(".preview-cell").forEach(el => {
+                    el.classList.remove("preview-cell", "bg-green-500/50", "bg-red-500/50");
+                });
+            }
+
+            if (!isEnter) return;
+
+            const cells = gridEl.children;
+            const idx = r * CONSTANTS.COLS + c;
+            
+            if (state.currentTool === "island") {
+                if (idx < cells.length) {
+                    const cell = cells[idx];
+                    const isValid = state.setupGridData[r][c] === 0; // Simplified valid check for visual
+                    cell.classList.add("preview-cell", isValid ? "bg-green-500/50" : "bg-red-500/50");
+                }
+            } else if (state.currentTool === "ship") {
+                const size = CONSTANTS.SHIPS_CONFIG[state.currentShipIdx];
+                if (size === undefined) return;
+
+                let isValid = true;
+                const shipCells = [];
+
+                for (let i = 0; i < size; i++) {
+                    let sr = r + (state.isVertical ? i : 0);
+                    let sc = c + (state.isVertical ? 0 : i);
+
+                    if (sr >= CONSTANTS.ROWS || sc >= CONSTANTS.COLS) {
+                        isValid = false;
+                        continue;
+                    }
+
+                    const sIdx = sr * CONSTANTS.COLS + sc;
+                    if (sIdx < cells.length) shipCells.push(cells[sIdx]);
+
+                    // Check collision
+                    if (state.setupGridData[sr][sc] === 1 || 
+                        state.setupObjects.ships.some(s => {
+                            // Simple collision check logic here or reuse existing
+                            return false; // Visual only for now, logic handled in click
+                        })) {
+                         // Detailed collision check is complex to replicate in hover without helper, 
+                         // but we can check basic grid data if we had it mapped. 
+                         // For now, just bounds check is good visual feedback.
+                    }
+                }
+
+                shipCells.forEach(cell => {
+                    cell.classList.add("preview-cell", isValid ? "bg-green-500/50" : "bg-red-500/50");
+                });
+            }
+        }
+
+        function renderSetupGrid() {
+            const gridEl = document.getElementById("setupGrid");
+            if (!gridEl) return;
+            gridEl.innerHTML = "";
+            
+            // Update Island Count
+            const currentIslands = state.setupGridData.flat().filter(x => x === 1).length;
+            const countDisplay = document.getElementById("islandCountDisplay");
+            if(countDisplay) countDisplay.innerText = `${currentIslands}/${CONSTANTS.ISLAND_LIMIT}`;
+            
+            renderFleetSidebar();
+
             for (let r = 0; r < CONSTANTS.ROWS; r++) {
                 for (let c = 0; c < CONSTANTS.COLS; c++) {
-                    const cell = document.createElement('div');
-                    let className = 'grid-cell';
-                    if (state.setupGridData[r][c] === 1) className += ' cell-island';
+                    const cell = document.createElement("div");
+                    let className = "grid-cell";
+                    if (state.setupGridData[r][c] === 1) className += " cell-island";
+                    
                     const ship = state.setupObjects.ships.find(s => {
                         if (s.vertical) return c === s.c && r >= s.r && r < s.r + s.size;
                         else return r === s.r && c >= s.c && c < s.c + s.size;
                     });
-                    if (ship) className += ' cell-ship';
-                    if (state.setupObjects.turrets.some(t => t.r === r && t.c === c)) className += ' cell-turret';
+                    if (ship) className += " cell-ship";
+                    
+                    if (state.setupObjects.turrets.some(t => t.r === r && t.c === c)) className += " cell-turret";
+                    
                     cell.className = className;
                     cell.onclick = () => handleSetupClick(r, c);
+                    cell.onmouseenter = () => handleSetupHover(r, c, true);
+                    cell.onmouseleave = () => handleSetupHover(r, c, false);
+                    
                     gridEl.appendChild(cell);
                 }
             }
+        }
         }
 
         function handleSetupClick(r, c) {
@@ -1121,3 +1204,5 @@
 </body>
 
 </html>
+
+
