@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -919,147 +919,164 @@
             }
         }
 
-
-        window.undoLastAction = () => {
-            if (state.currentTool === "ship") {
-                if (state.currentShipIdx > 0) {
-                    state.currentShipIdx--;
-                    // Remove the ship that corresponds to this index (which is the last one added)
-                    // Since we add sequentially, popping is safe enough, but filtering is safer if order got mixed
-                    // But based on handleSetupClick, we push. So pop is fine.
-                    state.setupObjects.ships.pop();
-                    renderSetupGrid();
-                }
-            } else if (state.currentTool === "turret") {
-                if (state.setupObjects.turrets.length > 0) {
-                    state.setupObjects.turrets.pop();
-                    renderSetupGrid();
-                }
-            }
-        };
-
-        function renderSetupGrid() {
-            const gridEl = document.getElementById("setupGrid");
-            if (!gridEl) return;
-            gridEl.innerHTML = "";
-
-            // Update Island Count
-            const currentIslands = state.setupGridData.flat().filter(x => x === 1).length;
-            const countDisplay = document.getElementById("islandCountDisplay");
-            if (countDisplay) countDisplay.innerText = `${currentIslands}/${CONSTANTS.ISLAND_LIMIT}`;
-
-            renderFleetSidebar();
-
-            for (let r = 0; r < CONSTANTS.ROWS; r++) {
-                for (let c = 0; c < CONSTANTS.COLS; c++) {
-                    const cell = document.createElement("div");
-                    let className = "grid-cell";
-                    if (state.setupGridData[r][c] === 1) className += " cell-island";
-
-                    const ship = state.setupObjects.ships.find(s => {
-                        if (s.vertical) return c === s.c && r >= s.r && r < s.r + s.size;
-                        else return r === s.r && c >= s.c && c < s.c + s.size;
-                    });
-                    if (ship) className += " cell-ship";
-
-                    if (state.setupObjects.turrets.some(t => t.r === r && t.c === c)) className += " cell-turret";
-
-                    cell.className = className;
-                    cell.onclick = () => handleSetupClick(r, c);
-                    cell.onmouseenter = () => handleSetupHover(r, c, true);
-                    cell.onmouseleave = () => handleSetupHover(r, c, false);
-
-                    gridEl.appendChild(cell);
-                }
-            }
-        }
-
-
-        function handleSetupClick(r, c) {
-            if (state.currentTool === "island") {
-                let currentIslands = state.setupGridData.flat().filter(x => x === 1).length;
-                if (state.setupGridData[r][c] === 0) {
-                    if (currentIslands < CONSTANTS.ISLAND_LIMIT) state.setupGridData[r][c] = 1;
-                } else { state.setupGridData[r][c] = 0; }
-            } else if (state.currentTool === "turret") {
-                const exists = state.setupObjects.turrets.find(t => t.r === r && t.c === c);
-                if (exists) state.setupObjects.turrets = state.setupObjects.turrets.filter(t => t !== exists);
-                else state.setupObjects.turrets.push({ r, c });
-            } else if (state.currentTool === "ship") {
-                const size = CONSTANTS.SHIPS_CONFIG[state.currentShipIdx];
-                if (size === undefined) return;
-
-                let valid = true;
-                for (let i = 0; i < size; i++) {
-                    let sr = r + (state.isVertical ? i : 0);
-                    let sc = c + (state.isVertical ? 0 : i);
-                    if (sr >= CONSTANTS.ROWS || sc >= CONSTANTS.COLS) { valid = false; break; }
-                    if (state.setupGridData[sr][sc] === 1) { valid = false; break; }
-
-                    const collision = state.setupObjects.ships.some((s, sIdx) => {
-                        if (sIdx === state.currentShipIdx) return false;
-                        for (let j = 0; j < s.size; j++) {
-                            let osr = s.r + (s.vertical ? j : 0);
-                            let osc = s.c + (s.vertical ? 0 : j);
-                            if (sr === osr && sc === osc) return true;
+                    window.undoLastAction = () => {
+                        if (state.currentTool === "ship") {
+                            if (state.currentShipIdx > 0) {
+                                state.currentShipIdx--;
+                                state.setupObjects.ships.pop();
+                                renderSetupGrid();
+                            }
+                        } else if (state.currentTool === "turret") {
+                            if (state.setupObjects.turrets.length > 0) {
+                                state.setupObjects.turrets.pop();
+                                renderSetupGrid();
+                            }
                         }
-                        return false;
-                    });
-                    if (collision) { valid = false; break; }
-                }
+                    };
 
-                if (valid) {
-                    state.setupObjects.ships = state.setupObjects.ships.filter((_, idx) => idx !== state.currentShipIdx);
+                    function renderSetupGrid() {
+                        const gridEl = document.getElementById("setupGrid");
+                        if (!gridEl) return;
+                        gridEl.innerHTML = "";
 
-                    state.setupObjects.ships.push({
-                        r, c, size, vertical: state.isVertical, hits: Array(size).fill(false)
-                    });
+                        // Update Island Count
+                        const currentIslands = state.setupGridData.flat().filter(x => x === 1).length;
+                        const countDisplay = document.getElementById("islandCountDisplay");
+                        if (countDisplay) countDisplay.innerText = `${currentIslands}/${CONSTANTS.ISLAND_LIMIT}`;
 
-                    if (state.currentShipIdx < CONSTANTS.SHIPS_CONFIG.length - 1) {
-                        state.currentShipIdx++;
+                        renderFleetSidebar();
+
+                        for (let r = 0; r < CONSTANTS.ROWS; r++) {
+                            for (let c = 0; c < CONSTANTS.COLS; c++) {
+                                const cell = document.createElement("div");
+                                let className = "grid-cell";
+                                if (state.setupGridData[r][c] === 1) className += " cell-island";
+
+                                const ship = state.setupObjects.ships.find(s => {
+                                    if (s.vertical) return c === s.c && r >= s.r && r < s.r + s.size;
+                                    else return r === s.r && c >= s.c && c < s.c + s.size;
+                                });
+                                if (ship) className += " cell-ship";
+
+                                if (state.setupObjects.turrets.some(t => t.r === r && t.c === c)) className += " cell-turret";
+
+                                cell.className = className;
+                                cell.onclick = () => handleSetupClick(r, c);
+                                cell.onmouseenter = () => handleSetupHover(r, c, true);
+                                cell.onmouseleave = () => handleSetupHover(r, c, false);
+
+                                gridEl.appendChild(cell);
+                            }
+                        }
                     }
-                }
-            }
-            renderSetupGrid();
-        }
 
-        window.submitBoard = async () => {
-            try {
-                if (state.setupObjects.ships.length < CONSTANTS.SHIPS_CONFIG.length) {
-                    alert(`Deploy all ships! (${state.setupObjects.ships.length}/${CONSTANTS.SHIPS_CONFIG.length})`);
-                    return;
-                }
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', state.currentUser.uid), {
-                    grid: state.setupGridData.flat(), turrets: state.setupObjects.turrets, ships: state.setupObjects.ships, status: 'ready'
-                });
-                document.getElementById('setupWaitingRoom').classList.remove('hidden-el');
-                if (state.playerRole === 'host') {
-                    document.getElementById('setupHostControls').classList.remove('hidden-el');
-                    document.getElementById('setupClientMessage').classList.add('hidden-el');
-                } else {
-                    document.getElementById('setupHostControls').classList.add('hidden-el');
-                    document.getElementById('setupClientMessage').classList.remove('hidden-el');
-                }
-                monitorSetupReadiness();
-            } catch (error) { console.error("Submit Error:", error); alert("Error submitting board: " + error.message); }
-        };
+                    function handleSetupClick(r, c) {
+                        try {
+                            console.log("Clicked cell:", r, c, "Tool:", state.currentTool);
+                            if (state.currentTool === "island") {
+                                let currentIslands = state.setupGridData.flat().filter(x => x === 1).length;
+                                if (state.setupGridData[r][c] === 0) {
+                                    if (currentIslands < CONSTANTS.ISLAND_LIMIT) {
+                                        state.setupGridData[r][c] = 1;
+                                    } else {
+                                        alert("Maximum islands reached!");
+                                    }
+                                } else {
+                                    state.setupGridData[r][c] = 0;
+                                    state.setupObjects.turrets = state.setupObjects.turrets.filter(t => t.r !== r || t.c !== c);
+                                }
+                            } else if (state.currentTool === "turret") {
+                                const exists = state.setupObjects.turrets.find(t => t.r === r && t.c === c);
+                                if (exists) {
+                                    state.setupObjects.turrets = state.setupObjects.turrets.filter(t => t !== exists);
+                                } else {
+                                    if (state.setupGridData[r][c] === 1) {
+                                        state.setupObjects.turrets.push({ r, c });
+                                    } else {
+                                        alert("Turrets must be placed on islands!");
+                                    }
+                                }
+                            } else if (state.currentTool === "ship") {
+                                const size = CONSTANTS.SHIPS_CONFIG[state.currentShipIdx];
+                                if (size === undefined) return;
 
-        function monitorSetupReadiness() {
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players'), (snapshot) => {
-                const list = document.getElementById('setupPlayerList');
-                if (!list) return;
-                list.innerHTML = '';
-                let allReady = true;
-                let playerCount = 0;
-                snapshot.forEach(doc => {
-                    const p = doc.data();
-                    if (p.status === 'joining') return;
-                    playerCount++;
-                    const isReady = p.status === 'ready' || p.status === 'alive';
-                    if (!isReady) allReady = false;
-                    const div = document.createElement('div');
-                    div.className = `p-3 rounded border flex items-center justify-between ${isReady ? 'bg-green-900/20 border-green-500/30' : 'bg-slate-800 border-slate-700'}`;
-                    div.innerHTML = `
+                                let valid = true;
+                                for (let i = 0; i < size; i++) {
+                                    let sr = r + (state.isVertical ? i : 0);
+                                    let sc = c + (state.isVertical ? 0 : i);
+                                    if (sr >= CONSTANTS.ROWS || sc >= CONSTANTS.COLS) { valid = false; break; }
+                                    if (state.setupGridData[sr][sc] === 1) { valid = false; break; }
+
+                                    const collision = state.setupObjects.ships.some((s, sIdx) => {
+                                        if (sIdx === state.currentShipIdx) return false;
+                                        for (let j = 0; j < s.size; j++) {
+                                            let osr = s.r + (s.vertical ? j : 0);
+                                            let osc = s.c + (s.vertical ? 0 : j);
+                                            if (sr === osr && sc === osc) return true;
+                                        }
+                                        return false;
+                                    });
+                                    if (collision) { valid = false; break; }
+                                }
+
+                                if (valid) {
+                                    state.setupObjects.ships = state.setupObjects.ships.filter((_, idx) => idx !== state.currentShipIdx);
+
+                                    state.setupObjects.ships.push({
+                                        r, c, size, vertical: state.isVertical, hits: Array(size).fill(false)
+                                    });
+
+                                    if (state.currentShipIdx < CONSTANTS.SHIPS_CONFIG.length - 1) {
+                                        state.currentShipIdx++;
+                                    }
+                                } else {
+                                    console.log("Invalid ship placement");
+                                }
+                            }
+                            renderSetupGrid();
+                        } catch (e) {
+                            console.error("Setup Click Error:", e);
+                            alert("Error handling click: " + e.message);
+                        }
+                    }
+
+                    window.submitBoard = async () => {
+                        try {
+                            if (state.setupObjects.ships.length < CONSTANTS.SHIPS_CONFIG.length) {
+                                alert(`Deploy all ships! (${state.setupObjects.ships.length}/${CONSTANTS.SHIPS_CONFIG.length})`);
+                                return;
+                            }
+                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', state.currentUser.uid), {
+                                grid: state.setupGridData.flat(), turrets: state.setupObjects.turrets, ships: state.setupObjects.ships, status: 'ready'
+                            });
+                            document.getElementById('setupWaitingRoom').classList.remove('hidden-el');
+                            if (state.playerRole === 'host') {
+                                document.getElementById('setupHostControls').classList.remove('hidden-el');
+                                document.getElementById('setupClientMessage').classList.add('hidden-el');
+                            } else {
+                                document.getElementById('setupHostControls').classList.add('hidden-el');
+                                document.getElementById('setupClientMessage').classList.remove('hidden-el');
+                            }
+                            monitorSetupReadiness();
+                        } catch (error) { console.error("Submit Error:", error); alert("Error submitting board: " + error.message); }
+                    };
+
+                    function monitorSetupReadiness() {
+                        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players'), (snapshot) => {
+                            const list = document.getElementById('setupPlayerList');
+                            if (!list) return;
+                            list.innerHTML = '';
+                            let allReady = true;
+                            let playerCount = 0;
+                            snapshot.forEach(doc => {
+                                const p = doc.data();
+                                if (p.status === 'joining') return;
+                                playerCount++;
+                                const isReady = p.status === 'ready' || p.status === 'alive';
+                                if (!isReady) allReady = false;
+                                const div = document.createElement('div');
+                                div.className = `p-3 rounded border flex items-center justify-between ${isReady ? 'bg-green-900/20 border-green-500/30' : 'bg-slate-800 border-slate-700'}`;
+                                div.innerHTML = `
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded flex items-center justify-center font-bold text-xs ${isReady ? 'bg-green-500 text-white' : 'bg-slate-700 text-slate-400'}">
                                 ${isReady ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-wrench"></i>'}
@@ -1070,194 +1087,194 @@
                             ${isReady ? 'READY FOR BATTLE' : 'CONFIGURING TERRITORY'}
                         </span>
                     `;
-                    list.appendChild(div);
-                });
-                const startBtn = document.getElementById('forceStartBtn');
-                if (state.playerRole === 'host' && startBtn) {
-                    if (allReady && playerCount > 0) {
-                        startBtn.disabled = false;
-                        startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                        startBtn.classList.add('animate-pulse');
-                    } else {
-                        startBtn.disabled = true;
-                        startBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                        startBtn.classList.remove('animate-pulse');
+                                list.appendChild(div);
+                            });
+                            const startBtn = document.getElementById('forceStartBtn');
+                            if (state.playerRole === 'host' && startBtn) {
+                                if (allReady && playerCount > 0) {
+                                    startBtn.disabled = false;
+                                    startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                    startBtn.classList.add('animate-pulse');
+                                } else {
+                                    startBtn.disabled = true;
+                                    startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                                    startBtn.classList.remove('animate-pulse');
+                                }
+                            }
+                        });
                     }
-                }
-            });
-        }
 
-        window.initiateBattleSequence = async () => {
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId), { status: 'battle' });
-        };
+                    window.initiateBattleSequence = async () => {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId), { status: 'battle' });
+                    };
 
-        // --- Battle Logic ---
-        function startBattle() {
-            document.getElementById('setupScreen').classList.add('hidden-el');
-            showScreen('battleScreen');
-            updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', state.currentUser.uid), { status: 'alive' });
+                    // --- Battle Logic ---
+                    function startBattle() {
+                        document.getElementById('setupScreen').classList.add('hidden-el');
+                        showScreen('battleScreen');
+                        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', state.currentUser.uid), { status: 'alive' });
 
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players'), (snap) => {
-                const list = document.getElementById('enemyList');
-                list.innerHTML = '';
-                state.playersData = {};
-                snap.forEach(d => {
-                    const p = d.data();
-                    state.playersData[p.id] = p;
-                    if (p.id === state.currentUser.uid) {
-                        state.currentRoundAmmo = p.ammo;
-                        document.getElementById('myAmmo').innerText = p.ammo;
-                        document.getElementById('bonusAmmo').innerText = p.bonusAmmo;
-                        updateFireButton();
-                        if (!state.selectedEnemyId) renderBattleGrid(state.currentUser.uid); if (state.playerRole === "host") document.getElementById("hostResetBtn").classList.remove("hidden-el"); if (state.playerRole === "host") document.getElementById("hostResetBtn").classList.remove("hidden-el");
-                    } else if (p.status === 'alive') {
-                        const btn = document.createElement('button');
-                        btn.className = `w-full text-left p-3 rounded mb-2 transition flex justify-between items-center shadow-sm border ${state.selectedEnemyId === p.id ? 'bg-red-900/40 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600'}`;
-                        btn.innerHTML = `
+                        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players'), (snap) => {
+                            const list = document.getElementById('enemyList');
+                            list.innerHTML = '';
+                            state.playersData = {};
+                            snap.forEach(d => {
+                                const p = d.data();
+                                state.playersData[p.id] = p;
+                                if (p.id === state.currentUser.uid) {
+                                    state.currentRoundAmmo = p.ammo;
+                                    document.getElementById('myAmmo').innerText = p.ammo;
+                                    document.getElementById('bonusAmmo').innerText = p.bonusAmmo;
+                                    updateFireButton();
+                                    if (!state.selectedEnemyId) renderBattleGrid(state.currentUser.uid); if (state.playerRole === "host") document.getElementById("hostResetBtn").classList.remove("hidden-el");
+                                } else if (p.status === 'alive') {
+                                    const btn = document.createElement('button');
+                                    btn.className = `w-full text-left p-3 rounded mb-2 transition flex justify-between items-center shadow-sm border ${state.selectedEnemyId === p.id ? 'bg-red-900/40 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600'}`;
+                                    btn.innerHTML = `
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full ${state.selectedEnemyId === p.id ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}"></span>
                             <span class="font-bold text-sm">${p.name}</span>
                         </div>
                         <i class="fa-solid fa-crosshairs ${state.selectedEnemyId === p.id ? 'text-red-400' : 'text-slate-500'}"></i>`;
-                        btn.onclick = () => selectEnemy(p.id, p.name);
-                        list.appendChild(btn);
-                    } else if (p.status === 'eliminated') {
-                        const div = document.createElement('div');
-                        div.className = "w-full text-left p-2 rounded mb-1 bg-slate-900/50 border border-slate-800 text-slate-600 text-xs italic flex justify-between";
-                        div.innerHTML = `<span>💀 ${p.name}</span> <span>KIA</span>`;
-                        list.appendChild(div);
+                                    btn.onclick = () => selectEnemy(p.id, p.name);
+                                    list.appendChild(btn);
+                                } else if (p.status === 'eliminated') {
+                                    const div = document.createElement('div');
+                                    div.className = "w-full text-left p-2 rounded mb-1 bg-slate-900/50 border border-slate-800 text-slate-600 text-xs italic flex justify-between";
+                                    div.innerHTML = `<span>๐’€ ${p.name}</span> <span>KIA</span>`;
+                                    list.appendChild(div);
+                                }
+                            });
+                            if (state.selectedEnemyId) renderBattleGrid(state.selectedEnemyId, toggleTarget);
+                            else renderBattleGrid(state.currentUser.uid);
+                            checkWinCondition();
+                        });
+
+                        onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId), (docSnap) => {
+                            const data = docSnap.data();
+                            if (data.round !== parseInt(document.getElementById('roundDisplay').innerText)) {
+                                document.getElementById('roundDisplay').innerText = data.round;
+                                state.pendingAttacks = [];
+                                updateFireButton();
+                                const fireBtn = document.getElementById('fireBtn');
+                                fireBtn.innerHTML = `<i class="fa-solid fa-crosshairs"></i> FIRE (0/${state.currentRoundAmmo})`;
+                                fireBtn.disabled = false;
+                                document.getElementById('phaseStatus').innerHTML = '<span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> SELECT TARGETS';
+                            }
+                        });
                     }
-                });
-                if (state.selectedEnemyId) renderBattleGrid(state.selectedEnemyId, toggleTarget);
-                else renderBattleGrid(state.currentUser.uid);
-                checkWinCondition();
-            });
 
-            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId), (docSnap) => {
-                const data = docSnap.data();
-                if (data.round !== parseInt(document.getElementById('roundDisplay').innerText)) {
-                    document.getElementById('roundDisplay').innerText = data.round;
-                    state.pendingAttacks = [];
-                    updateFireButton();
-                    const fireBtn = document.getElementById('fireBtn');
-                    fireBtn.innerHTML = `<i class="fa-solid fa-crosshairs"></i> FIRE (0/${state.currentRoundAmmo})`;
-                    fireBtn.disabled = false;
-                    document.getElementById('phaseStatus').innerHTML = '<span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> SELECT TARGETS';
-                }
-            });
-        }
+                    function selectEnemy(id, name) {
+                        state.selectedEnemyId = id;
+                        const badge = document.getElementById('targetName');
+                        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> LOCK: ${name}`;
+                        badge.className = "mx-auto mt-4 px-6 py-2 bg-red-900/80 rounded-full border border-red-500 text-sm font-mono text-white shadow-[0_0_20px_rgba(220,38,38,0.5)] z-10 flex items-center gap-3";
+                        renderBattleGrid(id, toggleTarget);
+                        updateFireButton();
+                    }
 
-        function selectEnemy(id, name) {
-            state.selectedEnemyId = id;
-            const badge = document.getElementById('targetName');
-            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> LOCK: ${name}`;
-            badge.className = "mx-auto mt-4 px-6 py-2 bg-red-900/80 rounded-full border border-red-500 text-sm font-mono text-white shadow-[0_0_20px_rgba(220,38,38,0.5)] z-10 flex items-center gap-3";
-            renderBattleGrid(id, toggleTarget);
-            updateFireButton();
-        }
+                    function toggleTarget(targetId, r, c) {
+                        const exists = state.pendingAttacks.find(a => a.targetId === targetId && a.r === r && a.c === c);
+                        if (exists) state.pendingAttacks = state.pendingAttacks.filter(a => a !== exists);
+                        else if (state.pendingAttacks.length < state.currentRoundAmmo) state.pendingAttacks.push({ targetId, r, c });
+                        renderBattleGrid(targetId, toggleTarget);
+                        updateFireButton();
+                    }
 
-        function toggleTarget(targetId, r, c) {
-            const exists = state.pendingAttacks.find(a => a.targetId === targetId && a.r === r && a.c === c);
-            if (exists) state.pendingAttacks = state.pendingAttacks.filter(a => a !== exists);
-            else if (state.pendingAttacks.length < state.currentRoundAmmo) state.pendingAttacks.push({ targetId, r, c });
-            renderBattleGrid(targetId, toggleTarget);
-            updateFireButton();
-        }
+                    window.viewSelf = () => {
+                        state.selectedEnemyId = null;
+                        const badge = document.getElementById('targetName');
+                        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500"></span> TERRITORY STATUS`;
+                        badge.className = "mx-auto mt-4 px-6 py-2 bg-blue-900/80 rounded-full border border-blue-500 text-sm font-mono text-white shadow-[0_0_20px_rgba(37,99,235,0.5)] z-10 flex items-center gap-3";
+                        renderBattleGrid(state.currentUser.uid);
+                    };
 
-        window.viewSelf = () => {
-            state.selectedEnemyId = null;
-            const badge = document.getElementById('targetName');
-            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500"></span> TERRITORY STATUS`;
-            badge.className = "mx-auto mt-4 px-6 py-2 bg-blue-900/80 rounded-full border border-blue-500 text-sm font-mono text-white shadow-[0_0_20px_rgba(37,99,235,0.5)] z-10 flex items-center gap-3";
-            renderBattleGrid(state.currentUser.uid);
-        };
+                    window.confirmAttack = async () => {
+                        if (state.pendingAttacks.length === 0) return;
+                        const btn = document.getElementById('fireBtn');
+                        btn.disabled = true;
+                        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> TRANSMITTING...`;
+                        document.getElementById('phaseStatus').innerHTML = '<span class="text-yellow-400">WAITING FOR RESOLUTION</span>';
+                        const batch = writeBatch(db);
+                        const moveRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'moves', `${state.gameData.round}_${state.currentUser.uid}`);
+                        batch.set(moveRef, { playerId: state.currentUser.uid, attacks: state.pendingAttacks, round: state.gameData.round, timestamp: Date.now() });
+                        batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', state.currentUser.uid), { moveSubmitted: true });
+                        await batch.commit();
+                        if (state.playerRole === 'host') monitorMovesAndResolve();
+                    };
 
-        window.confirmAttack = async () => {
-            if (state.pendingAttacks.length === 0) return;
-            const btn = document.getElementById('fireBtn');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> TRANSMITTING...`;
-            document.getElementById('phaseStatus').innerHTML = '<span class="text-yellow-400">WAITING FOR RESOLUTION</span>';
-            const batch = writeBatch(db);
-            const moveRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'moves', `${state.gameData.round}_${state.currentUser.uid}`);
-            batch.set(moveRef, { playerId: state.currentUser.uid, attacks: state.pendingAttacks, round: state.gameData.round, timestamp: Date.now() });
-            batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', state.currentUser.uid), { moveSubmitted: true });
-            await batch.commit();
-            if (state.playerRole === 'host') monitorMovesAndResolve();
-        };
+                    function monitorMovesAndResolve() {
+                        const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'moves'), async (snap) => {
+                            const currentRoundMoves = snap.docs.filter(d => d.data().round === state.gameData.round);
+                            const alivePlayers = Object.values(state.playersData).filter(p => p.status === 'alive');
+                            if (currentRoundMoves.length >= alivePlayers.length && alivePlayers.length > 0) {
+                                unsub();
+                                resolveRound(currentRoundMoves.map(d => d.data()));
+                            }
+                        });
+                    }
 
-        function monitorMovesAndResolve() {
-            const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'moves'), async (snap) => {
-                const currentRoundMoves = snap.docs.filter(d => d.data().round === state.gameData.round);
-                const alivePlayers = Object.values(state.playersData).filter(p => p.status === 'alive');
-                if (currentRoundMoves.length >= alivePlayers.length && alivePlayers.length > 0) {
-                    unsub();
-                    resolveRound(currentRoundMoves.map(d => d.data()));
-                }
-            });
-        }
+                    async function resolveRound(allMoves) {
+                        const batch = writeBatch(db);
+                        let updates = {};
+                        allMoves.forEach(move => {
+                            move.attacks.forEach(att => {
+                                const target = state.playersData[att.targetId];
+                                if (!target || target.status !== 'alive') return;
+                                if (!updates[att.targetId]) updates[att.targetId] = { misses: target.misses || [], islandHits: target.islandHits || [], ships: target.ships, bonusAmmo: 0 };
+                                const tData = updates[att.targetId];
+                                const r = att.r, c = att.c;
+                                const flatIdx = r * CONSTANTS.COLS + c;
+                                let hitShip = false;
+                                tData.ships.forEach(ship => {
+                                    for (let i = 0; i < ship.size; i++) {
+                                        let sr = ship.r + (ship.vertical ? i : 0);
+                                        let sc = ship.c + (ship.vertical ? 0 : i);
+                                        if (sr === r && sc === c) { ship.hits[i] = true; hitShip = true; }
+                                    }
+                                });
+                                if (!hitShip) {
+                                    if (target.grid[flatIdx] === 1) { tData.islandHits.push({ r, c }); tData.bonusAmmo++; }
+                                    else tData.misses.push({ r, c });
+                                }
+                            });
+                        });
 
-        async function resolveRound(allMoves) {
-            const batch = writeBatch(db);
-            let updates = {};
-            allMoves.forEach(move => {
-                move.attacks.forEach(att => {
-                    const target = state.playersData[att.targetId];
-                    if (!target || target.status !== 'alive') return;
-                    if (!updates[att.targetId]) updates[att.targetId] = { misses: target.misses || [], islandHits: target.islandHits || [], ships: target.ships, bonusAmmo: 0 };
-                    const tData = updates[att.targetId];
-                    const r = att.r, c = att.c;
-                    const flatIdx = r * CONSTANTS.COLS + c;
-                    let hitShip = false;
-                    tData.ships.forEach(ship => {
-                        for (let i = 0; i < ship.size; i++) {
-                            let sr = ship.r + (ship.vertical ? i : 0);
-                            let sc = ship.c + (ship.vertical ? 0 : i);
-                            if (sr === r && sc === c) { ship.hits[i] = true; hitShip = true; }
+                        Object.keys(updates).forEach(pid => {
+                            const u = updates[pid];
+                            let allSunk = true;
+                            u.ships.forEach(s => { if (s.hits.includes(false)) allSunk = false; });
+                            const newStatus = allSunk ? 'eliminated' : 'alive';
+                            batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', pid), {
+                                ships: u.ships, misses: u.misses, islandHits: u.islandHits, bonusAmmo: u.bonusAmmo,
+                                ammo: 3 + u.bonusAmmo, status: newStatus, moveSubmitted: false
+                            });
+                        });
+
+                        Object.keys(state.playersData).forEach(pid => {
+                            if (!updates[pid] && state.playersData[pid].status === 'alive') {
+                                batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', pid), { ammo: 3, bonusAmmo: 0, moveSubmitted: false });
+                            }
+                        });
+
+                        batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId), { round: increment(1) });
+                        await batch.commit();
+                    }
+
+                    function checkWinCondition() {
+                        const alivePlayers = Object.values(state.playersData).filter(p => p.status === 'alive');
+                        const myPlayer = state.playersData[state.currentUser.uid];
+                        if (myPlayer && myPlayer.status === 'eliminated') { showEliminatedOverlay(); }
+                        if (state.gameData.status === 'battle' && alivePlayers.length === 1) {
+                            const winner = alivePlayers[0];
+                            if (winner.id === state.currentUser.uid) {
+                                showVictoryOverlay();
+                                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                            } else { showGameOverOverlay(winner.name); }
                         }
-                    });
-                    if (!hitShip) {
-                        if (target.grid[flatIdx] === 1) { tData.islandHits.push({ r, c }); tData.bonusAmmo++; }
-                        else tData.misses.push({ r, c });
                     }
-                });
-            });
 
-            Object.keys(updates).forEach(pid => {
-                const u = updates[pid];
-                let allSunk = true;
-                u.ships.forEach(s => { if (s.hits.includes(false)) allSunk = false; });
-                const newStatus = allSunk ? 'eliminated' : 'alive';
-                batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', pid), {
-                    ships: u.ships, misses: u.misses, islandHits: u.islandHits, bonusAmmo: u.bonusAmmo,
-                    ammo: 3 + u.bonusAmmo, status: newStatus, moveSubmitted: false
-                });
-            });
-
-            Object.keys(state.playersData).forEach(pid => {
-                if (!updates[pid] && state.playersData[pid].status === 'alive') {
-                    batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players', pid), { ammo: 3, bonusAmmo: 0, moveSubmitted: false });
-                }
-            });
-
-            batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId), { round: increment(1) });
-            await batch.commit();
-        }
-
-        function checkWinCondition() {
-            const alivePlayers = Object.values(state.playersData).filter(p => p.status === 'alive');
-            const myPlayer = state.playersData[state.currentUser.uid];
-            if (myPlayer && myPlayer.status === 'eliminated') { showEliminatedOverlay(); }
-            if (state.gameData.status === 'battle' && alivePlayers.length === 1) {
-                const winner = alivePlayers[0];
-                if (winner.id === state.currentUser.uid) {
-                    showVictoryOverlay();
-                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                } else { showGameOverOverlay(winner.name); }
-            }
-        }
-
-        setupAuthListener();
+                    setupAuthListener();
     </script>
 </body>
 
