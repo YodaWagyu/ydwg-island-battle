@@ -307,7 +307,8 @@
                             class="tool-btn w-full bg-slate-800 hover:bg-slate-700 p-3 rounded text-left border border-slate-700 transition flex items-center gap-3 group">
                             <div
                                 class="w-8 h-8 rounded bg-green-600/20 text-green-500 flex items-center justify-center group-hover:bg-green-500 group-hover:text-white transition">
-                                <i class="fa-solid fa-mountain"></i></div>
+                                <i class="fa-solid fa-mountain"></i>
+                            </div>
                             <div>
                                 <div class="text-sm font-bold text-slate-200">Build Land</div>
                                 <div class="text-[10px] text-slate-500">Max 32 Tiles</div>
@@ -317,7 +318,8 @@
                             class="tool-btn w-full bg-slate-800 hover:bg-slate-700 p-3 rounded text-left border border-slate-700 transition flex items-center gap-3 group">
                             <div
                                 class="w-8 h-8 rounded bg-blue-600/20 text-blue-500 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition">
-                                <i class="fa-solid fa-water"></i></div>
+                                <i class="fa-solid fa-water"></i>
+                            </div>
                             <div class="text-sm font-bold text-slate-200">Remove</div>
                         </button>
                     </div>
@@ -329,7 +331,8 @@
                             class="tool-btn w-full bg-slate-800 hover:bg-slate-700 p-3 rounded text-left border border-slate-700 transition flex items-center gap-3 group">
                             <div
                                 class="w-8 h-8 rounded bg-yellow-600/20 text-yellow-500 flex items-center justify-center group-hover:bg-yellow-500 group-hover:text-white transition">
-                                <i class="fa-solid fa-shield-halved"></i></div>
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
                             <div>
                                 <div class="text-sm font-bold text-slate-200">Turret</div>
                                 <div class="text-[10px] text-slate-500">Max 3 Units</div>
@@ -453,7 +456,14 @@
         // --- Config ---
         // For PRODUCTION (Vercel/Netlify): Paste your Firebase config below
         // For LOCAL DEVELOPMENT: Keep this null and create firebase-config.js file
-        const INLINE_CONFIG = null; // ← Paste your Firebase config object here for deployment
+        const INLINE_CONFIG = {
+            apiKey: "AIzaSyDUffk0rriqkog1qqrcjKlgGvCh-s7Nyao",
+            authDomain: "ydwg-island-battle.firebaseapp.com",
+            projectId: "ydwg-island-battle",
+            storageBucket: "ydwg-island-battle.firebasestorage.app",
+            messagingSenderId: "488273932578",
+            appId: "1:488273932578:web:852d684fd2962b61cdf57b"
+        };
 
         let firebaseConfig;
 
