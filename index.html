@@ -178,12 +178,15 @@
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-users"></i>
                         ACTIVE UNITS</h3>
-                    
+
                     <div class="flex items-center gap-2">
-                        <button onclick="location.reload()" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition" title="Manual Refresh">
+                        <button onclick="location.reload()"
+                            class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition"
+                            title="Manual Refresh">
                             <i class="fa-solid fa-rotate-right"></i>
                         </button>
-                        <span class="bg-slate-800 px-3 py-1 rounded text-xs font-mono text-slate-400">COUNT: <span id="playerCount" class="text-white">0</span></span>
+                        <span class="bg-slate-800 px-3 py-1 rounded text-xs font-mono text-slate-400">COUNT: <span
+                                id="playerCount" class="text-white">0</span></span>
                     </div>
                 </div>
                 <div id="lobbyPlayerList"
@@ -324,9 +327,11 @@
                 <div class="glass-panel p-6 rounded-xl border border-slate-700 shadow-2xl mb-8">
                     <div class="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
                         <h3 class="font-bold text-slate-300">Fleet Status</h3>
-                        
+
                         <div class="flex items-center gap-2">
-                            <button onclick="location.reload()" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition" title="Manual Refresh">
+                            <button onclick="location.reload()"
+                                class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition"
+                                title="Manual Refresh">
                                 <i class="fa-solid fa-rotate-right"></i>
                             </button>
                             <div class="text-xs font-mono text-slate-500">LIVE FEED</div>
@@ -372,10 +377,13 @@
                 </div>
             </div>
 
-            <button id="hostResetBtn" onclick="resetGame()" class="hidden-el px-3 py-1 bg-slate-800 hover:bg-red-900/50 border border-slate-700 hover:border-red-500 text-slate-400 hover:text-red-400 rounded text-xs font-bold transition flex items-center gap-2 mr-4"><i class="fa-solid fa-power-off"></i> RESET</button>
-             onclick="confirmAttack()" disabled
-                class="bg-red-600 hover:bg-red-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold py-2 px-8 rounded shadow-lg shadow-red-900/50 transition-all flex items-center gap-2">
-                <i class="fa-solid fa-crosshairs"></i> FIRE (0/3)
+            <button id="hostResetBtn" onclick="resetGame()"
+                class="hidden-el px-3 py-1 bg-slate-800 hover:bg-red-900/50 border border-slate-700 hover:border-red-500 text-slate-400 hover:text-red-400 rounded text-xs font-bold transition flex items-center gap-2 mr-4"><i
+                    class="fa-solid fa-power-off"></i> RESET</button>
+            onclick="confirmAttack()" disabled
+            class="bg-red-600 hover:bg-red-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold py-2
+            px-8 rounded shadow-lg shadow-red-900/50 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-crosshairs"></i> FIRE (0/3)
             </button>
         </header>
 
@@ -503,11 +511,11 @@
             location.reload();
         };
 
-        
 
-        
 
-        
+
+
+
         function showScreen(screenId) {
             document.querySelectorAll('body > div').forEach(d => d.classList.add('hidden-el'));
             const screen = document.getElementById(screenId);
@@ -518,6 +526,12 @@
             document.getElementById('passwordModal').classList.remove('hidden-el');
             document.getElementById('hostPasswordInput').value = '';
             document.getElementById('hostPasswordInput').focus();
+        };
+
+        window.logout = () => {
+            if (confirm("Abort operation and return to HQ?")) {
+                auth.signOut().then(() => location.reload());
+            }
         };
 
         window.closePasswordModal = () => {
@@ -699,7 +713,7 @@
             } catch (e) { console.error("Join Error:", e); alert("Error joining game: " + e.message); }
         };
 
-        
+
         function startLobbyListener() {
             onSnapshot(collection(db, "artifacts", appId, "public", "data", "games", state.currentGameId, "players"), (snapshot) => {
                 const list = document.getElementById("lobbyPlayerList");
@@ -708,13 +722,13 @@
                 state.playersData = {};
                 let count = 0;
                 let amIInGame = false;
-                
+
                 snapshot.forEach(doc => {
                     const p = doc.data();
                     if (p.id === state.currentUser.uid) amIInGame = true;
                     state.playersData[p.id] = p;
                     count++;
-                    
+
                     const div = document.createElement("div");
                     div.className = "bg-slate-800/50 p-3 rounded border border-slate-700 flex items-center gap-3 hover:bg-slate-800 transition group relative";
                     div.innerHTML = `
@@ -725,7 +739,7 @@
                         </div>
                         ${p.status === "ready" || p.status === "alive" ? "<div class=\"px-2 py-1 bg-green-900/30 border border-green-800 rounded text-[10px] text-green-400 font-bold uppercase tracking-wider\">Ready</div>" : "<div class=\"w-2 h-2 bg-slate-600 rounded-full\"></div>"}
                     `;
-                    
+
                     if (state.playerRole === "host" && p.id !== state.currentUser.uid) {
                         const kickBtn = document.createElement("button");
                         kickBtn.className = "ml-2 text-slate-600 hover:text-red-500 transition opacity-0 group-hover:opacity-100";
@@ -734,16 +748,16 @@
                         kickBtn.onclick = (e) => { e.stopPropagation(); kickPlayer(p.id, p.name); };
                         div.appendChild(kickBtn);
                     }
-                    
+
                     list.appendChild(div);
                 });
-                
+
                 if (!amIInGame && state.currentUser && state.playerRole !== "host") {
                     alert("You have been discharged from the operation.");
                     location.reload();
                     return;
                 }
-                
+
                 document.getElementById("playerCount").innerText = count;
                 checkGameStatus();
             });
@@ -1081,7 +1095,3 @@
 </body>
 
 </html>
-
-
-
-
