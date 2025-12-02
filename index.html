@@ -41,11 +41,10 @@
             .glass-panel {
                 @apply bg-slate-900/80 backdrop-blur-md border border-slate-700/50;
             }
-            .grid-cell {
+            .grid-cell { 
                 @apply bg-slate-900/50 border border-slate-700/30 transition-all duration-200 cursor-pointer hover:bg-slate-800 relative;
                 width: 2.5rem;
                 height: 2.5rem;
-                aspect-ratio: 1;
             }
             .cell-water { @apply bg-slate-900/50; }
             .cell-island { 
@@ -359,7 +358,8 @@
                 </div>
             </div>
 
-            <button id="fireBtn" onclick="confirmAttack()" disabled
+            <button id="hostResetBtn" onclick="resetGame()" class="hidden-el px-3 py-1 bg-slate-800 hover:bg-red-900/50 border border-slate-700 hover:border-red-500 text-slate-400 hover:text-red-400 rounded text-xs font-bold transition flex items-center gap-2 mr-4"><i class="fa-solid fa-power-off"></i> RESET</button>
+             onclick="confirmAttack()" disabled
                 class="bg-red-600 hover:bg-red-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold py-2 px-8 rounded shadow-lg shadow-red-900/50 transition-all flex items-center gap-2">
                 <i class="fa-solid fa-crosshairs"></i> FIRE (0/3)
             </button>
@@ -468,6 +468,25 @@
         };
 
         // --- UI Functions ---
+
+        window.resetGame = async () => {
+            if (!confirm("?? WARNING: This will RESET the operation for ALL units. Confirm?")) return;
+            const batch = writeBatch(db);
+            batch.update(doc(db, "artifacts", appId, "public", "data", "games", state.currentGameId), { status: "lobby", round: 1 });
+            Object.keys(state.playersData).forEach(pid => {
+                batch.update(doc(db, "artifacts", appId, "public", "data", "games", state.currentGameId, "players", pid), {
+                    status: "joining", grid: [], ships: [], turrets: [], misses: [], islandHits: [], ammo: 3, bonusAmmo: 0, moveSubmitted: false
+                });
+            });
+            await batch.commit();
+            location.reload();
+        };
+
+        
+
+        
+
+        
         function showScreen(screenId) {
             document.querySelectorAll('body > div').forEach(d => d.classList.add('hidden-el'));
             const screen = document.getElementById(screenId);
@@ -510,7 +529,7 @@
                 for (let c = 0; c < CONSTANTS.COLS; c++) {
                     const idx = r * CONSTANTS.COLS + c;
                     const cell = document.createElement('div');
-                    let baseClass = 'cell-water';
+                    let baseClass = 'w-10 h-10 grid-cell rounded-sm cell-water';
                     let overlayClass = '';
 
                     if (isSelf) {
@@ -538,7 +557,7 @@
                         cell.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-red-500 opacity-50"><i class="fa-solid fa-crosshairs text-[10px]"></i></div>';
                     }
 
-                    cell.className = `grid-cell rounded-sm ${overlayClass || baseClass}`;
+                    cell.className = `${baseClass} ${overlayClass}`;
                     if (!isSelf && !overlayClass && onCellClick) {
                         cell.onclick = () => onCellClick(targetId, r, c);
                     }
@@ -866,7 +885,7 @@
                         document.getElementById('myAmmo').innerText = p.ammo;
                         document.getElementById('bonusAmmo').innerText = p.bonusAmmo;
                         updateFireButton();
-                        if (!state.selectedEnemyId) renderBattleGrid(state.currentUser.uid);
+                        if (!state.selectedEnemyId) renderBattleGrid(state.currentUser.uid); if (state.playerRole === "host") document.getElementById("hostResetBtn").classList.remove("hidden-el"); if (state.playerRole === "host") document.getElementById("hostResetBtn").classList.remove("hidden-el");
                     } else if (p.status === 'alive') {
                         const btn = document.createElement('button');
                         btn.className = `w-full text-left p-3 rounded mb-2 transition flex justify-between items-center shadow-sm border ${state.selectedEnemyId === p.id ? 'bg-red-900/40 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600'}`;
@@ -1019,3 +1038,4 @@
 </body>
 
 </html>
+
