@@ -885,11 +885,78 @@
             await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', currentUser.uid), {
                 grid: setupGridData.flat(), turrets: setupObjects.turrets, ships: setupObjects.ships, status: 'ready'
             });
-            document.getElementById('setupScreen').innerHTML = '<div class="flex flex-col h-full items-center justify-center text-center p-4 bg-slate-900"><div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-6"></div><h2 class="text-2xl font-bold text-white mb-2">STANDING BY</h2><p class="text-slate-400">Synchronizing fleet data with command...</p></div>';
+
+            // Show Waiting Room instead of destroying UI
+            document.getElementById('setupWaitingRoom').classList.remove('hidden-el');
+
+            // Host Controls Logic
+            if (playerRole === 'host') {
+                document.getElementById('setupHostControls').classList.remove('hidden-el');
+                document.getElementById('setupClientMessage').classList.add('hidden-el');
+            } else {
+                document.getElementById('setupHostControls').classList.add('hidden-el');
+                document.getElementById('setupClientMessage').classList.remove('hidden-el');
+            }
+
+            // Start listening for readiness
+            monitorSetupReadiness();
+        };
+
+        function monitorSetupReadiness() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players'), (snapshot) => {
+                const list = document.getElementById('setupPlayerList');
+                list.innerHTML = '';
+                let allReady = true;
+                let playerCount = 0;
+
+                snapshot.forEach(doc => {
+                    const p = doc.data();
+                    if (p.status === 'joining') return; // Skip players who haven't started setup
+                    playerCount++;
+
+                    const isReady = p.status === 'ready' || p.status === 'alive';
+                    if (!isReady) allReady = false;
+
+                    const div = document.createElement('div');
+                    div.className = `p-3 rounded border flex items-center justify-between ${isReady ? 'bg-green-900/20 border-green-500/30' : 'bg-slate-800 border-slate-700'}`;
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded flex items-center justify-center font-bold text-xs ${isReady ? 'bg-green-500 text-white' : 'bg-slate-700 text-slate-400'}">
+                                ${isReady ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-wrench"></i>'}
+                            </div>
+                            <span class="font-bold text-slate-200 text-sm">${p.name}</span>
+                        </div>
+                        <span class="text-[10px] font-mono uppercase tracking-wider ${isReady ? 'text-green-400' : 'text-yellow-500'}">
+                            ${isReady ? 'READY FOR BATTLE' : 'CONFIGURING TERRITORY'}
+                        </span>
+                    `;
+                    list.appendChild(div);
+                });
+
+                // Host Button Logic
+                const startBtn = document.getElementById('forceStartBtn');
+                if (playerRole === 'host') {
+                    if (allReady && playerCount > 0) {
+                        startBtn.disabled = false;
+                        startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        startBtn.classList.add('animate-pulse');
+                    } else {
+                        startBtn.disabled = true;
+                        startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        startBtn.classList.remove('animate-pulse');
+                    }
+                }
+            });
+        }
+
+        window.initiateBattleSequence = async () => {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId), { status: 'battle' });
         };
 
         // --- Logic: Battle ---
         function startBattle() {
+            // Hide Setup Screen completely
+            document.getElementById('setupScreen').classList.add('hidden-el');
             showScreen('battleScreen');
             updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', currentUser.uid), { status: 'alive' });
 
