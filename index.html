@@ -85,18 +85,6 @@
                 font-family: "Font Awesome 6 Free";
                 font-weight: 900;
                 @apply absolute inset-0 flex items-center justify-center text-yellow-500 text-sm animate-pulse;
-            }
-        }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { @apply bg-slate-900; }
-        ::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded hover:bg-slate-600; }
-    </style>
-</head>
-
-<body class="bg-slate-950 text-slate-200 font-sans h-screen overflow-hidden select-none">
-
     <!-- Login Screen -->
     <div id="loginScreen" class="flex flex-col items-center justify-center h-full relative overflow-hidden">
         <div
@@ -287,6 +275,7 @@
                 </div>
 
                 <div class="mt-auto pt-6 border-t border-slate-800 flex gap-2">
+                    <button onclick="undoLastAction()" class="flex-1 py-2 bg-yellow-900/20 text-yellow-500 border border-yellow-900/50 rounded hover:bg-yellow-900/40 text-xs font-bold transition">UNDO</button>
                     <button onclick="clearBoard()"
                         class="flex-1 py-2 bg-red-900/20 text-red-500 border border-red-900/50 rounded hover:bg-red-900/40 text-xs font-bold transition">CLEAR</button>
                     <button onclick="randomizeBoard()"
@@ -912,6 +901,25 @@
                 });
             }
         }
+
+        
+        window.undoLastAction = () => {
+            if (state.currentTool === "ship") {
+                if (state.currentShipIdx > 0) {
+                    state.currentShipIdx--;
+                    // Remove the ship that corresponds to this index (which is the last one added)
+                    // Since we add sequentially, popping is safe enough, but filtering is safer if order got mixed
+                    // But based on handleSetupClick, we push. So pop is fine.
+                    state.setupObjects.ships.pop();
+                    renderSetupGrid();
+                }
+            } else if (state.currentTool === "turret") {
+                if (state.setupObjects.turrets.length > 0) {
+                    state.setupObjects.turrets.pop();
+                    renderSetupGrid();
+                }
+            }
+        };
 
         function renderSetupGrid() {
             const gridEl = document.getElementById("setupGrid");
