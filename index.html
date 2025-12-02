@@ -41,10 +41,10 @@
             .glass-panel {
                 @apply bg-slate-900/80 backdrop-blur-md border border-slate-700/50;
             }
-            .grid-cell { 
-                @apply bg-slate-900/50 border border-slate-700/30 transition-all duration-200 cursor-pointer hover:bg-slate-800 relative;
+            .grid-cell {
                 width: 2.5rem;
                 height: 2.5rem;
+                @apply bg-blue-900/30 border border-blue-800/30 transition-all duration-200 cursor-pointer hover:bg-blue-800/50 relative;
             }
             .cell-water { @apply bg-slate-900/50; }
             .cell-island { 
@@ -171,6 +171,7 @@
                 <div
                     class="glass-panel px-4 py-2 rounded-full text-xs font-mono text-green-400 flex items-center gap-2">
                     <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> ONLINE
+                    <button onclick="logout()" class="ml-2 text-slate-500 hover:text-red-400 transition"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
             </div>
 
@@ -259,17 +260,9 @@
                 <!-- Ship Tool -->
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Fleet</h3>
-                    <button id="btn-ship" onclick="selectTool('ship')"
-                        class="tool-btn w-full bg-slate-800 hover:bg-slate-700 p-4 rounded-xl border border-slate-700 transition-all text-left group">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div
-                                class="w-8 h-8 rounded bg-blue-900/50 border border-blue-500/30 flex items-center justify-center text-blue-500">
-                                <i class="fa-solid fa-ship"></i>
-                            </div>
-                            <span class="font-bold text-slate-200 group-hover:text-white">WARSHIP</span>
-                        </div>
-                        <p id="shipPreview" class="text-xs text-blue-400 font-mono">NEXT: CARRIER (4 TILES)</p>
-                    </button>
+                    <div id="fleetList" class="space-y-2">
+                        <!-- Dynamic Fleet List -->
+                    </div>
                     <button id="btn-rotate" onclick="toggleOrientation()"
                         class="w-full py-2 bg-slate-800 border border-slate-700 rounded text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-700 transition">
                         <i class="fa-solid fa-arrow-right"></i> HORIZONTAL
@@ -490,6 +483,50 @@
         };
 
         // --- UI Functions ---
+
+        window.logout = () => {
+            if(confirm("Abort operation and return to HQ?")) {
+                auth.signOut().then(() => location.reload());
+            }
+        };
+
+        function renderFleetSidebar() {
+            const list = document.getElementById("fleetList");
+            if (!list) return;
+            list.innerHTML = "";
+            
+            CONSTANTS.SHIPS_CONFIG.forEach((size, idx) => {
+                const isPlaced = idx < state.currentShipIdx;
+                const isActive = idx === state.currentShipIdx;
+                const name = getShipName(size);
+                
+                const btn = document.createElement("button");
+                btn.className = `w-full p-3 rounded-lg border text-left transition flex items-center justify-between ${
+                    isActive 
+                    ? "bg-blue-900/40 border-blue-500 ring-1 ring-blue-500" 
+                    : isPlaced 
+                        ? "bg-slate-800/50 border-slate-700 opacity-50" 
+                        : "bg-slate-800 border-slate-700 opacity-70"
+                }`;
+                
+                if (isActive) btn.onclick = () => selectTool("ship");
+                
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded flex items-center justify-center ${isActive ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-400"}">
+                            <i class="fa-solid fa-ship"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold ${isActive ? "text-white" : "text-slate-400"}">${name}</div>
+                            <div class="text-[10px] font-mono ${isActive ? "text-blue-300" : "text-slate-500"}">${size} TILES</div>
+                        </div>
+                    </div>
+                    ${isPlaced ? "<i class=\"fa-solid fa-check text-green-500\"></i>" : ""}
+                `;
+                list.appendChild(btn);
+            });
+        }
+
 
         window.kickPlayer = async (pid, name) => {
             if (!confirm(`Confirm discharge of ${name}?`)) return;
@@ -785,9 +822,7 @@
             state.currentTool = tool;
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('ring-2', 'ring-white'));
             document.getElementById(`btn-${tool}`).classList.add('ring-2', 'ring-white');
-            if (tool === 'ship') {
-                state.currentShipIdx = 0;
-                document.getElementById('shipPreview').innerText = `SHIP (${CONSTANTS.SHIPS_CONFIG[0]} TILES)`;
+             TILES)`;
             }
         };
 
@@ -842,16 +877,7 @@
                 const exists = state.setupObjects.turrets.find(t => t.r === r && t.c === c);
                 if (exists) state.setupObjects.turrets = state.setupObjects.turrets.filter(t => t !== exists);
                 else state.setupObjects.turrets.push({ r, c });
-            } else if (state.currentTool === 'ship') {
-                if (state.currentShipIdx >= CONSTANTS.SHIPS_CONFIG.length) return;
-                const size = CONSTANTS.SHIPS_CONFIG[state.currentShipIdx];
-                if (state.isVertical && r + size > CONSTANTS.ROWS) return;
-                if (!state.isVertical && c + size > CONSTANTS.COLS) return;
-                state.setupObjects.ships.push({ r, c, size, vertical: state.isVertical, hits: Array(size).fill(false) });
-                state.currentShipIdx++;
-                if (state.currentShipIdx < CONSTANTS.SHIPS_CONFIG.length) {
-                    document.getElementById('shipPreview').innerText = `SHIP (${CONSTANTS.SHIPS_CONFIG[state.currentShipIdx]} TILES)`;
-                } else { document.getElementById('shipPreview').innerText = "ALL SHIPS DEPLOYED"; }
+            } else 
             }
             renderSetupGrid();
         }
