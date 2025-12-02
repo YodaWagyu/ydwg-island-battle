@@ -951,16 +951,49 @@
         }
 
         function handleSetupClick(r, c) {
-            if (state.currentTool === 'island') {
+            if (state.currentTool === "island") {
                 let currentIslands = state.setupGridData.flat().filter(x => x === 1).length;
                 if (state.setupGridData[r][c] === 0) {
                     if (currentIslands < CONSTANTS.ISLAND_LIMIT) state.setupGridData[r][c] = 1;
                 } else { state.setupGridData[r][c] = 0; }
-            } else if (state.currentTool === 'turret') {
+            } else if (state.currentTool === "turret") {
                 const exists = state.setupObjects.turrets.find(t => t.r === r && t.c === c);
                 if (exists) state.setupObjects.turrets = state.setupObjects.turrets.filter(t => t !== exists);
                 else state.setupObjects.turrets.push({ r, c });
-            } else 
+            } else if (state.currentTool === "ship") {
+                const size = CONSTANTS.SHIPS_CONFIG[state.currentShipIdx];
+                if (size === undefined) return;
+
+                let valid = true;
+                for(let i=0; i<size; i++) {
+                    let sr = r + (state.isVertical ? i : 0);
+                    let sc = c + (state.isVertical ? 0 : i);
+                    if(sr >= CONSTANTS.ROWS || sc >= CONSTANTS.COLS) { valid = false; break; }
+                    if(state.setupGridData[sr][sc] === 1) { valid = false; break; }
+                    
+                    const collision = state.setupObjects.ships.some((s, sIdx) => {
+                        if(sIdx === state.currentShipIdx) return false;
+                        for(let j=0; j<s.size; j++) {
+                            let osr = s.r + (s.vertical ? j : 0);
+                            let osc = s.c + (s.vertical ? 0 : j);
+                            if(sr === osr && sc === osc) return true;
+                        }
+                        return false;
+                    });
+                    if(collision) { valid = false; break; }
+                }
+
+                if(valid) {
+                    state.setupObjects.ships = state.setupObjects.ships.filter((_, idx) => idx !== state.currentShipIdx);
+                    
+                    state.setupObjects.ships.push({
+                        r, c, size, vertical: state.isVertical, hits: Array(size).fill(false)
+                    });
+                    
+                    if(state.currentShipIdx < CONSTANTS.SHIPS_CONFIG.length - 1) {
+                        state.currentShipIdx++;
+                    }
+                }
             }
             renderSetupGrid();
         }
@@ -1204,5 +1237,6 @@
 </body>
 
 </html>
+
 
 
