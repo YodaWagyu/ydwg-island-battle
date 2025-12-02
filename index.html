@@ -932,26 +932,30 @@
 
                 // Start listening for readiness
                 monitorSetupReadiness();
-            };
+            } catch (error) {
+                console.error("Submit Error:", error);
+                alert("Error submitting board: " + error.message);
+            }
+        };
 
-            function monitorSetupReadiness() {
-                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players'), (snapshot) => {
-                    const list = document.getElementById('setupPlayerList');
-                    list.innerHTML = '';
-                    let allReady = true;
-                    let playerCount = 0;
+        function monitorSetupReadiness() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players'), (snapshot) => {
+                const list = document.getElementById('setupPlayerList');
+                list.innerHTML = '';
+                let allReady = true;
+                let playerCount = 0;
 
-                    snapshot.forEach(doc => {
-                        const p = doc.data();
-                        if (p.status === 'joining') return; // Skip players who haven't started setup
-                        playerCount++;
+                snapshot.forEach(doc => {
+                    const p = doc.data();
+                    if (p.status === 'joining') return; // Skip players who haven't started setup
+                    playerCount++;
 
-                        const isReady = p.status === 'ready' || p.status === 'alive';
-                        if (!isReady) allReady = false;
+                    const isReady = p.status === 'ready' || p.status === 'alive';
+                    if (!isReady) allReady = false;
 
-                        const div = document.createElement('div');
-                        div.className = `p-3 rounded border flex items-center justify-between ${isReady ? 'bg-green-900/20 border-green-500/30' : 'bg-slate-800 border-slate-700'}`;
-                        div.innerHTML = `
+                    const div = document.createElement('div');
+                    div.className = `p-3 rounded border flex items-center justify-between ${isReady ? 'bg-green-900/20 border-green-500/30' : 'bg-slate-800 border-slate-700'}`;
+                    div.innerHTML = `
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded flex items-center justify-center font-bold text-xs ${isReady ? 'bg-green-500 text-white' : 'bg-slate-700 text-slate-400'}">
                                 ${isReady ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-wrench"></i>'}
@@ -962,243 +966,243 @@
                             ${isReady ? 'READY FOR BATTLE' : 'CONFIGURING TERRITORY'}
                         </span>
                     `;
-                        list.appendChild(div);
-                    });
-
-                    // Host Button Logic
-                    const startBtn = document.getElementById('forceStartBtn');
-                    if (playerRole === 'host') {
-                        if (allReady && playerCount > 0) {
-                            startBtn.disabled = false;
-                            startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                            startBtn.classList.add('animate-pulse');
-                        } else {
-                            startBtn.disabled = true;
-                            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                            startBtn.classList.remove('animate-pulse');
-                        }
-                    }
+                    list.appendChild(div);
                 });
-            }
 
-            window.initiateBattleSequence = async () => {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId), { status: 'battle' });
-            };
+                // Host Button Logic
+                const startBtn = document.getElementById('forceStartBtn');
+                if (playerRole === 'host') {
+                    if (allReady && playerCount > 0) {
+                        startBtn.disabled = false;
+                        startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        startBtn.classList.add('animate-pulse');
+                    } else {
+                        startBtn.disabled = true;
+                        startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        startBtn.classList.remove('animate-pulse');
+                    }
+                }
+            });
+        }
 
-            // --- Logic: Battle ---
-            function startBattle() {
-                // Hide Setup Screen completely
-                document.getElementById('setupScreen').classList.add('hidden-el');
-                showScreen('battleScreen');
-                updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', currentUser.uid), { status: 'alive' });
+        window.initiateBattleSequence = async () => {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId), { status: 'battle' });
+        };
 
-                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players'), (snap) => {
-                    const list = document.getElementById('enemyList');
-                    list.innerHTML = '';
-                    playersData = {};
-                    snap.forEach(d => {
-                        const p = d.data();
-                        playersData[p.id] = p;
-                        if (p.id === currentUser.uid) {
-                            currentRoundAmmo = p.ammo;
-                            document.getElementById('myAmmo').innerText = p.ammo;
-                            document.getElementById('bonusAmmo').innerText = p.bonusAmmo;
-                            updateFireButton();
-                            if (!selectedEnemyId) renderBattleGrid(currentUser.uid);
-                        } else if (p.status === 'alive') {
-                            const btn = document.createElement('button');
-                            btn.className = `w-full text-left p-3 rounded mb-2 transition flex justify-between items-center shadow-sm border ${selectedEnemyId === p.id ? 'bg-red-900/40 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600'}`;
-                            btn.innerHTML = `
+        // --- Logic: Battle ---
+        function startBattle() {
+            // Hide Setup Screen completely
+            document.getElementById('setupScreen').classList.add('hidden-el');
+            showScreen('battleScreen');
+            updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', currentUser.uid), { status: 'alive' });
+
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players'), (snap) => {
+                const list = document.getElementById('enemyList');
+                list.innerHTML = '';
+                playersData = {};
+                snap.forEach(d => {
+                    const p = d.data();
+                    playersData[p.id] = p;
+                    if (p.id === currentUser.uid) {
+                        currentRoundAmmo = p.ammo;
+                        document.getElementById('myAmmo').innerText = p.ammo;
+                        document.getElementById('bonusAmmo').innerText = p.bonusAmmo;
+                        updateFireButton();
+                        if (!selectedEnemyId) renderBattleGrid(currentUser.uid);
+                    } else if (p.status === 'alive') {
+                        const btn = document.createElement('button');
+                        btn.className = `w-full text-left p-3 rounded mb-2 transition flex justify-between items-center shadow-sm border ${selectedEnemyId === p.id ? 'bg-red-900/40 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600'}`;
+                        btn.innerHTML = `
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full ${selectedEnemyId === p.id ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}"></span>
                                 <span class="font-bold text-sm">${p.name}</span>
                             </div>
                             <i class="fa-solid fa-crosshairs ${selectedEnemyId === p.id ? 'text-red-400' : 'text-slate-500'}"></i>`;
-                            btn.onclick = () => selectEnemy(p.id, p.name);
-                            list.appendChild(btn);
-                        } else if (p.status === 'eliminated') {
-                            const div = document.createElement('div');
-                            div.className = "w-full text-left p-2 rounded mb-1 bg-slate-900/50 border border-slate-800 text-slate-600 text-xs italic flex justify-between";
-                            div.innerHTML = `<span>💀 ${p.name}</span> <span>KIA</span>`;
-                            list.appendChild(div);
+                        btn.onclick = () => selectEnemy(p.id, p.name);
+                        list.appendChild(btn);
+                    } else if (p.status === 'eliminated') {
+                        const div = document.createElement('div');
+                        div.className = "w-full text-left p-2 rounded mb-1 bg-slate-900/50 border border-slate-800 text-slate-600 text-xs italic flex justify-between";
+                        div.innerHTML = `<span>💀 ${p.name}</span> <span>KIA</span>`;
+                        list.appendChild(div);
+                    }
+                });
+                if (selectedEnemyId) renderBattleGrid(selectedEnemyId);
+                else renderBattleGrid(currentUser.uid);
+            });
+
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId), (docSnap) => {
+                const data = docSnap.data();
+                if (data.round !== parseInt(document.getElementById('roundDisplay').innerText)) {
+                    document.getElementById('roundDisplay').innerText = data.round;
+                    pendingAttacks = [];
+                    updateFireButton();
+                    const fireBtn = document.getElementById('fireBtn');
+                    fireBtn.innerHTML = `<i class="fa-solid fa-crosshairs"></i> FIRE (0/${currentRoundAmmo})`;
+                    fireBtn.disabled = false;
+                    document.getElementById('phaseStatus').innerHTML = '<span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> SELECT TARGETS';
+                }
+            });
+        }
+
+        window.selectEnemy = (id, name) => {
+            selectedEnemyId = id;
+            const badge = document.getElementById('targetName');
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> LOCK: ${name}`;
+            badge.className = "mx-auto mt-4 px-6 py-2 bg-red-900/80 rounded-full border border-red-500 text-sm font-mono text-white shadow-[0_0_20px_rgba(220,38,38,0.5)] z-10 flex items-center gap-3";
+            renderBattleGrid(id);
+            updateFireButton();
+        };
+
+        window.viewSelf = () => {
+            selectedEnemyId = null;
+            const badge = document.getElementById('targetName');
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500"></span> TERRITORY STATUS`;
+            badge.className = "mx-auto mt-4 px-6 py-2 bg-blue-900/80 rounded-full border border-blue-500 text-sm font-mono text-white shadow-[0_0_20px_rgba(37,99,235,0.5)] z-10 flex items-center gap-3";
+            renderBattleGrid(currentUser.uid);
+        };
+
+        function renderBattleGrid(targetId) {
+            const gridEl = document.getElementById('battleGrid');
+            gridEl.innerHTML = '';
+            const targetData = playersData[targetId];
+            if (!targetData) return;
+            const flatGrid = targetData.grid || [];
+            if (flatGrid.length === 0) return;
+
+            const misses = targetData.misses || [];
+            const islandHits = targetData.islandHits || [];
+            const isSelf = targetId === currentUser.uid;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const idx = r * COLS + c;
+                    const cell = document.createElement('div');
+                    let baseClass = 'cell-water';
+                    let overlayClass = '';
+
+                    if (isSelf) {
+                        if (flatGrid[idx] === 1) baseClass = 'cell-island';
+                        const ship = targetData.ships.find(s => {
+                            if (s.vertical) return c === s.c && r >= s.r && r < s.r + s.size;
+                            else return r === s.r && c >= s.c && c < s.c + s.size;
+                        });
+                        if (ship) baseClass = 'cell-ship';
+                        if (targetData.turrets.some(t => t.r === r && t.c === c)) baseClass = 'cell-turret';
+                    }
+
+                    if (misses.some(m => m.r === r && m.c === c)) overlayClass = 'cell-miss';
+                    if (islandHits.some(h => h.r === r && h.c === c)) overlayClass = 'cell-island-hit';
+                    targetData.ships.forEach(s => {
+                        for (let i = 0; i < s.size; i++) {
+                            let sr = s.r + (s.vertical ? i : 0);
+                            let sc = s.c + (s.vertical ? 0 : i);
+                            if (sr === r && sc === c && s.hits[i]) overlayClass = 'cell-hit';
                         }
                     });
-                    if (selectedEnemyId) renderBattleGrid(selectedEnemyId);
-                    else renderBattleGrid(currentUser.uid);
-                });
 
-                onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId), (docSnap) => {
-                    const data = docSnap.data();
-                    if (data.round !== parseInt(document.getElementById('roundDisplay').innerText)) {
-                        document.getElementById('roundDisplay').innerText = data.round;
-                        pendingAttacks = [];
-                        updateFireButton();
-                        const fireBtn = document.getElementById('fireBtn');
-                        fireBtn.innerHTML = `<i class="fa-solid fa-crosshairs"></i> FIRE (0/${currentRoundAmmo})`;
-                        fireBtn.disabled = false;
-                        document.getElementById('phaseStatus').innerHTML = '<span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> SELECT TARGETS';
+                    if (!isSelf && pendingAttacks.some(a => a.targetId === targetId && a.r === r && a.c === c)) {
+                        cell.classList.add('ring-2', 'ring-red-500', 'z-20', 'bg-red-500/40');
+                        cell.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-red-500 opacity-50"><i class="fa-solid fa-crosshairs text-[10px]"></i></div>';
                     }
-                });
-            }
-
-            window.selectEnemy = (id, name) => {
-                selectedEnemyId = id;
-                const badge = document.getElementById('targetName');
-                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> LOCK: ${name}`;
-                badge.className = "mx-auto mt-4 px-6 py-2 bg-red-900/80 rounded-full border border-red-500 text-sm font-mono text-white shadow-[0_0_20px_rgba(220,38,38,0.5)] z-10 flex items-center gap-3";
-                renderBattleGrid(id);
-                updateFireButton();
-            };
-
-            window.viewSelf = () => {
-                selectedEnemyId = null;
-                const badge = document.getElementById('targetName');
-                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500"></span> TERRITORY STATUS`;
-                badge.className = "mx-auto mt-4 px-6 py-2 bg-blue-900/80 rounded-full border border-blue-500 text-sm font-mono text-white shadow-[0_0_20px_rgba(37,99,235,0.5)] z-10 flex items-center gap-3";
-                renderBattleGrid(currentUser.uid);
-            };
-
-            function renderBattleGrid(targetId) {
-                const gridEl = document.getElementById('battleGrid');
-                gridEl.innerHTML = '';
-                const targetData = playersData[targetId];
-                if (!targetData) return;
-                const flatGrid = targetData.grid || [];
-                if (flatGrid.length === 0) return;
-
-                const misses = targetData.misses || [];
-                const islandHits = targetData.islandHits || [];
-                const isSelf = targetId === currentUser.uid;
-
-                for (let r = 0; r < ROWS; r++) {
-                    for (let c = 0; c < COLS; c++) {
-                        const idx = r * COLS + c;
-                        const cell = document.createElement('div');
-                        let baseClass = 'cell-water';
-                        let overlayClass = '';
-
-                        if (isSelf) {
-                            if (flatGrid[idx] === 1) baseClass = 'cell-island';
-                            const ship = targetData.ships.find(s => {
-                                if (s.vertical) return c === s.c && r >= s.r && r < s.r + s.size;
-                                else return r === s.r && c >= s.c && c < s.c + s.size;
-                            });
-                            if (ship) baseClass = 'cell-ship';
-                            if (targetData.turrets.some(t => t.r === r && t.c === c)) baseClass = 'cell-turret';
-                        }
-
-                        if (misses.some(m => m.r === r && m.c === c)) overlayClass = 'cell-miss';
-                        if (islandHits.some(h => h.r === r && h.c === c)) overlayClass = 'cell-island-hit';
-                        targetData.ships.forEach(s => {
-                            for (let i = 0; i < s.size; i++) {
-                                let sr = s.r + (s.vertical ? i : 0);
-                                let sc = s.c + (s.vertical ? 0 : i);
-                                if (sr === r && sc === c && s.hits[i]) overlayClass = 'cell-hit';
-                            }
-                        });
-
-                        if (!isSelf && pendingAttacks.some(a => a.targetId === targetId && a.r === r && a.c === c)) {
-                            cell.classList.add('ring-2', 'ring-red-500', 'z-20', 'bg-red-500/40');
-                            cell.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-red-500 opacity-50"><i class="fa-solid fa-crosshairs text-[10px]"></i></div>';
-                        }
-                        cell.className = `grid-cell rounded-sm ${overlayClass || baseClass}`;
-                        if (!isSelf && !overlayClass) cell.onclick = () => toggleTarget(targetId, r, c);
-                        gridEl.appendChild(cell);
-                    }
+                    cell.className = `grid-cell rounded-sm ${overlayClass || baseClass}`;
+                    if (!isSelf && !overlayClass) cell.onclick = () => toggleTarget(targetId, r, c);
+                    gridEl.appendChild(cell);
                 }
             }
+        }
 
-            function toggleTarget(targetId, r, c) {
-                const exists = pendingAttacks.find(a => a.targetId === targetId && a.r === r && a.c === c);
-                if (exists) pendingAttacks = pendingAttacks.filter(a => a !== exists);
-                else if (pendingAttacks.length < currentRoundAmmo) pendingAttacks.push({ targetId, r, c });
-                renderBattleGrid(targetId);
-                updateFireButton();
+        function toggleTarget(targetId, r, c) {
+            const exists = pendingAttacks.find(a => a.targetId === targetId && a.r === r && a.c === c);
+            if (exists) pendingAttacks = pendingAttacks.filter(a => a !== exists);
+            else if (pendingAttacks.length < currentRoundAmmo) pendingAttacks.push({ targetId, r, c });
+            renderBattleGrid(targetId);
+            updateFireButton();
+        }
+
+        function updateFireButton() {
+            const btn = document.getElementById('fireBtn');
+            btn.innerHTML = `<i class="fa-solid fa-crosshairs"></i> FIRE (${pendingAttacks.length}/${currentRoundAmmo})`;
+            btn.disabled = pendingAttacks.length === 0;
+            if (pendingAttacks.length > 0) {
+                btn.classList.add('animate-pulse');
+            } else {
+                btn.classList.remove('animate-pulse');
             }
+        }
 
-            function updateFireButton() {
-                const btn = document.getElementById('fireBtn');
-                btn.innerHTML = `<i class="fa-solid fa-crosshairs"></i> FIRE (${pendingAttacks.length}/${currentRoundAmmo})`;
-                btn.disabled = pendingAttacks.length === 0;
-                if (pendingAttacks.length > 0) {
-                    btn.classList.add('animate-pulse');
-                } else {
-                    btn.classList.remove('animate-pulse');
+        window.confirmAttack = async () => {
+            if (pendingAttacks.length === 0) return;
+            const btn = document.getElementById('fireBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> TRANSMITTING...`;
+            document.getElementById('phaseStatus').innerHTML = '<span class="text-yellow-400">WAITING FOR RESOLUTION</span>';
+            const batch = writeBatch(db);
+            const moveRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'moves', `${gameData.round}_${currentUser.uid}`);
+            batch.set(moveRef, { playerId: currentUser.uid, attacks: pendingAttacks, round: gameData.round, timestamp: Date.now() });
+            batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', currentUser.uid), { moveSubmitted: true });
+            await batch.commit();
+            if (playerRole === 'host') monitorMovesAndResolve();
+        };
+
+        function monitorMovesAndResolve() {
+            const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'moves'), async (snap) => {
+                const currentRoundMoves = snap.docs.filter(d => d.data().round === gameData.round);
+                const alivePlayers = Object.values(playersData).filter(p => p.status === 'alive');
+                if (currentRoundMoves.length >= alivePlayers.length && alivePlayers.length > 0) {
+                    unsub();
+                    resolveRound(currentRoundMoves.map(d => d.data()));
                 }
-            }
+            });
+        }
 
-            window.confirmAttack = async () => {
-                if (pendingAttacks.length === 0) return;
-                const btn = document.getElementById('fireBtn');
-                btn.disabled = true;
-                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> TRANSMITTING...`;
-                document.getElementById('phaseStatus').innerHTML = '<span class="text-yellow-400">WAITING FOR RESOLUTION</span>';
-                const batch = writeBatch(db);
-                const moveRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'moves', `${gameData.round}_${currentUser.uid}`);
-                batch.set(moveRef, { playerId: currentUser.uid, attacks: pendingAttacks, round: gameData.round, timestamp: Date.now() });
-                batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', currentUser.uid), { moveSubmitted: true });
-                await batch.commit();
-                if (playerRole === 'host') monitorMovesAndResolve();
-            };
+        async function resolveRound(allMoves) {
+            const batch = writeBatch(db);
+            let updates = {};
+            allMoves.forEach(move => {
+                move.attacks.forEach(att => {
+                    const target = playersData[att.targetId];
+                    if (!target || target.status !== 'alive') return;
+                    if (!updates[att.targetId]) updates[att.targetId] = { misses: target.misses || [], islandHits: target.islandHits || [], ships: target.ships, bonusAmmo: 0 };
 
-            function monitorMovesAndResolve() {
-                const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'moves'), async (snap) => {
-                    const currentRoundMoves = snap.docs.filter(d => d.data().round === gameData.round);
-                    const alivePlayers = Object.values(playersData).filter(p => p.status === 'alive');
-                    if (currentRoundMoves.length >= alivePlayers.length && alivePlayers.length > 0) {
-                        unsub();
-                        resolveRound(currentRoundMoves.map(d => d.data()));
-                    }
-                });
-            }
-
-            async function resolveRound(allMoves) {
-                const batch = writeBatch(db);
-                let updates = {};
-                allMoves.forEach(move => {
-                    move.attacks.forEach(att => {
-                        const target = playersData[att.targetId];
-                        if (!target || target.status !== 'alive') return;
-                        if (!updates[att.targetId]) updates[att.targetId] = { misses: target.misses || [], islandHits: target.islandHits || [], ships: target.ships, bonusAmmo: 0 };
-
-                        const tData = updates[att.targetId];
-                        const r = att.r, c = att.c;
-                        const flatIdx = r * COLS + c;
-                        let hitShip = false;
-                        tData.ships.forEach(ship => {
-                            for (let i = 0; i < ship.size; i++) {
-                                let sr = ship.r + (ship.vertical ? i : 0);
-                                let sc = ship.c + (ship.vertical ? 0 : i);
-                                if (sr === r && sc === c) { ship.hits[i] = true; hitShip = true; }
-                            }
-                        });
-
-                        if (!hitShip) {
-                            if (target.grid[flatIdx] === 1) { tData.islandHits.push({ r, c }); tData.bonusAmmo++; }
-                            else tData.misses.push({ r, c });
+                    const tData = updates[att.targetId];
+                    const r = att.r, c = att.c;
+                    const flatIdx = r * COLS + c;
+                    let hitShip = false;
+                    tData.ships.forEach(ship => {
+                        for (let i = 0; i < ship.size; i++) {
+                            let sr = ship.r + (ship.vertical ? i : 0);
+                            let sc = ship.c + (ship.vertical ? 0 : i);
+                            if (sr === r && sc === c) { ship.hits[i] = true; hitShip = true; }
                         }
                     });
-                });
 
-                Object.keys(updates).forEach(pid => {
-                    const u = updates[pid];
-                    let allSunk = true;
-                    u.ships.forEach(s => { if (s.hits.includes(false)) allSunk = false; });
-                    batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', pid), {
-                        ships: u.ships, misses: u.misses, islandHits: u.islandHits, bonusAmmo: u.bonusAmmo,
-                        ammo: 3 + u.bonusAmmo, status: allSunk ? 'eliminated' : 'alive', moveSubmitted: false
-                    });
-                });
-
-                Object.keys(playersData).forEach(pid => {
-                    if (!updates[pid] && playersData[pid].status === 'alive') {
-                        batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', pid), { ammo: 3, bonusAmmo: 0, moveSubmitted: false });
+                    if (!hitShip) {
+                        if (target.grid[flatIdx] === 1) { tData.islandHits.push({ r, c }); tData.bonusAmmo++; }
+                        else tData.misses.push({ r, c });
                     }
                 });
+            });
 
-                batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId), { round: increment(1) });
-                await batch.commit();
-            }
+            Object.keys(updates).forEach(pid => {
+                const u = updates[pid];
+                let allSunk = true;
+                u.ships.forEach(s => { if (s.hits.includes(false)) allSunk = false; });
+                batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', pid), {
+                    ships: u.ships, misses: u.misses, islandHits: u.islandHits, bonusAmmo: u.bonusAmmo,
+                    ammo: 3 + u.bonusAmmo, status: allSunk ? 'eliminated' : 'alive', moveSubmitted: false
+                });
+            });
+
+            Object.keys(playersData).forEach(pid => {
+                if (!updates[pid] && playersData[pid].status === 'alive') {
+                    batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId, 'players', pid), { ammo: 3, bonusAmmo: 0, moveSubmitted: false });
+                }
+            });
+
+            batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentGameId), { round: increment(1) });
+            await batch.commit();
+        }
     </script>
 </body>
 
