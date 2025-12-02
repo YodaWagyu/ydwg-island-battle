@@ -178,8 +178,13 @@
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-users"></i>
                         ACTIVE UNITS</h3>
-                    <span class="bg-slate-800 px-3 py-1 rounded text-xs font-mono text-slate-400">COUNT: <span
-                            id="playerCount" class="text-white">0</span></span>
+                    
+                    <div class="flex items-center gap-2">
+                        <button onclick="location.reload()" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition" title="Manual Refresh">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                        <span class="bg-slate-800 px-3 py-1 rounded text-xs font-mono text-slate-400">COUNT: <span id="playerCount" class="text-white">0</span></span>
+                    </div>
                 </div>
                 <div id="lobbyPlayerList"
                     class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2">
@@ -316,7 +321,13 @@
                 <div class="glass-panel p-6 rounded-xl border border-slate-700 shadow-2xl mb-8">
                     <div class="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
                         <h3 class="font-bold text-slate-300">Fleet Status</h3>
-                        <div class="text-xs font-mono text-slate-500">LIVE FEED</div>
+                        
+                        <div class="flex items-center gap-2">
+                            <button onclick="location.reload()" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300 transition" title="Manual Refresh">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </button>
+                            <div class="text-xs font-mono text-slate-500">LIVE FEED</div>
+                        </div>
                     </div>
                     <div id="setupPlayerList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Player Status Items -->
@@ -427,7 +438,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // --- Config ---
         const firebaseConfig = {
@@ -468,6 +479,13 @@
         };
 
         // --- UI Functions ---
+
+        window.kickPlayer = async (pid, name) => {
+            if (!confirm(`Confirm discharge of ${name}?`)) return;
+            try {
+                await deleteDoc(doc(db, "artifacts", appId, "public", "data", "games", state.currentGameId, "players", pid));
+            } catch (e) { console.error("Kick error:", e); alert("Failed to kick: " + e.message); }
+        };
 
         window.resetGame = async () => {
             if (!confirm("?? WARNING: This will RESET the operation for ALL units. Confirm?")) return;
@@ -678,30 +696,52 @@
             } catch (e) { console.error("Join Error:", e); alert("Error joining game: " + e.message); }
         };
 
+        
         function startLobbyListener() {
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'games', state.currentGameId, 'players'), (snapshot) => {
-                const list = document.getElementById('lobbyPlayerList');
+            onSnapshot(collection(db, "artifacts", appId, "public", "data", "games", state.currentGameId, "players"), (snapshot) => {
+                const list = document.getElementById("lobbyPlayerList");
                 if (!list) return;
-                list.innerHTML = '';
+                list.innerHTML = "";
                 state.playersData = {};
                 let count = 0;
+                let amIInGame = false;
+                
                 snapshot.forEach(doc => {
                     const p = doc.data();
+                    if (p.id === state.currentUser.uid) amIInGame = true;
                     state.playersData[p.id] = p;
                     count++;
-                    const div = document.createElement('div');
-                    div.className = "bg-slate-800/50 p-3 rounded border border-slate-700 flex items-center gap-3 hover:bg-slate-800 transition";
+                    
+                    const div = document.createElement("div");
+                    div.className = "bg-slate-800/50 p-3 rounded border border-slate-700 flex items-center gap-3 hover:bg-slate-800 transition group relative";
                     div.innerHTML = `
                         <div class="w-10 h-10 rounded bg-slate-700 flex items-center justify-center font-bold text-sm text-slate-300 border border-slate-600">${p.name.substring(0, 2).toUpperCase()}</div>
                         <div class="flex-1 min-w-0">
                             <div class="truncate font-bold text-slate-200 text-sm">${p.name}</div>
-                            <div class="text-[10px] text-slate-500 font-mono uppercase">${p.id === state.currentUser.uid ? 'YOU' : 'ALLY'}</div>
+                            <div class="text-[10px] text-slate-500 font-mono uppercase">${p.id === state.currentUser.uid ? "YOU" : "ALLY"}</div>
                         </div>
-                        ${p.status === 'ready' || p.status === 'alive' ? '<div class="px-2 py-1 bg-green-900/30 border border-green-800 rounded text-[10px] text-green-400 font-bold uppercase tracking-wider">Ready</div>' : '<div class="w-2 h-2 bg-slate-600 rounded-full"></div>'}
+                        ${p.status === "ready" || p.status === "alive" ? "<div class=\"px-2 py-1 bg-green-900/30 border border-green-800 rounded text-[10px] text-green-400 font-bold uppercase tracking-wider\">Ready</div>" : "<div class=\"w-2 h-2 bg-slate-600 rounded-full\"></div>"}
                     `;
+                    
+                    if (state.playerRole === "host" && p.id !== state.currentUser.uid) {
+                        const kickBtn = document.createElement("button");
+                        kickBtn.className = "ml-2 text-slate-600 hover:text-red-500 transition opacity-0 group-hover:opacity-100";
+                        kickBtn.innerHTML = "<i class=\"fa-solid fa-user-xmark\"></i>";
+                        kickBtn.title = "Kick Player";
+                        kickBtn.onclick = (e) => { e.stopPropagation(); kickPlayer(p.id, p.name); };
+                        div.appendChild(kickBtn);
+                    }
+                    
                     list.appendChild(div);
                 });
-                document.getElementById('playerCount').innerText = count;
+                
+                if (!amIInGame && state.currentUser && state.playerRole !== "host") {
+                    alert("You have been discharged from the operation.");
+                    location.reload();
+                    return;
+                }
+                
+                document.getElementById("playerCount").innerText = count;
                 checkGameStatus();
             });
         }
@@ -1038,4 +1078,6 @@
 </body>
 
 </html>
+
+
 
